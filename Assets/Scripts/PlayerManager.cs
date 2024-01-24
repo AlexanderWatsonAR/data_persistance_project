@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
+using UnityEngine.SceneManagement;
+using System.Linq;
 
 
 public class PlayerManager : MonoBehaviour
@@ -12,9 +14,10 @@ public class PlayerManager : MonoBehaviour
 
     private void Awake()
     {
-        if(Instance == null)
+        if(Instance != null)
         {
             Destroy(gameObject);
+            return;
         }
 
         Instance = this;
@@ -37,25 +40,59 @@ public class PlayerManager : MonoBehaviour
     {
         if (playerData == null)
             return;
-
         string json = JsonUtility.ToJson(playerData);
-        File.WriteAllText(Application.dataPath + "/savefile.json", json);
-    }
+        string path = Application.persistentDataPath + "/leaderboard.json";
 
-    public void LoadPlayer()
-    {
-        string path = Application.dataPath + "/savefile.json";
-        if (File.Exists(path))
+        if (!File.Exists(path))
         {
-            string json = File.ReadAllText(path);
-            playerData = JsonUtility.FromJson<PlayerData>(json);
+            File.WriteAllText(path, json);
+            return;
+        }
+
+        using (StreamWriter writer = File.AppendText(path))
+        {
+            writer.WriteLine();
+            writer.Write(json);
         }
     }
-    [System.Serializable]
-    class PlayerData
+
+    public List<PlayerData> LoadLeaderboard()
     {
-        public string Name;
-        public int Score;
+        string path = Application.persistentDataPath + "/leaderboard.json";
+
+        if (!File.Exists(path))
+            return null;
+
+        List<PlayerData> leaderboard = new List<PlayerData>();
+
+        using (StreamReader reader = new StreamReader(path))
+        {
+            string line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                leaderboard.Add(JsonUtility.FromJson<PlayerData>(line));
+            }
+        }
+
+        return leaderboard;
     }
 
+    public PlayerData GetBestScore()
+    {
+        List<PlayerData> leaderboard = LoadLeaderboard();
+
+        if(leaderboard == null)
+            return null;
+
+        return leaderboard.OrderByDescending(x => x.Score).FirstOrDefault();
+
+    }
+
+}
+
+[System.Serializable]
+public class PlayerData
+{
+    public string Name;
+    public int Score;
 }

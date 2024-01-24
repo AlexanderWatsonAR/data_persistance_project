@@ -9,7 +9,6 @@ public class NameInput : MonoBehaviour
     [SerializeField] Button startButton;
     TMP_InputField m_NameInputField;
 
-
     private void Start()
     {
         m_NameInputField = GetComponent<TMP_InputField>();
